@@ -33,11 +33,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     ca-certificates \
     curl \
+    && apt-get info libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp
 
 RUN echo "pkg-config search paths:" && pkg-config --variable pc_path pkg-config
+RUN echo "Searching for libxml2.pc" && find / -name "libxml-2.0.pc" 2>/dev/null || echo "NOT FOUND"
 
 # Build x265 manually because Ubuntu packages suck
 RUN git clone https://github.com/videolan/x265.git && \
