@@ -130,7 +130,7 @@ COPY --from=tdarr-base /etc /etc
 COPY --from=tdarr-base /app /app
 COPY --from=tdarr-base /var /var
 COPY --from=tdarr-base /usr/local/bin/node /usr/local/bin/node
-COPY --from=tdarr-base /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=tdarr-base /usr/lib/node_modules /usr/lib/node_modules
 COPY --from=tdarr-base /usr/local/bin/dovi_tool /usr/local/bin/dovi_tool
 COPY --from=tdarr-base /usr/local/bin/hdr10plus_tool /usr/local/bin/hdr10plus_tool
 
