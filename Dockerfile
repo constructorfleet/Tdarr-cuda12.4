@@ -37,6 +37,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /tmp
 
+RUN echo "pkg-config search paths:" && pkg-config --variable pc_path pkg-config
+
 # Build x265 manually because Ubuntu packages suck
 RUN git clone https://github.com/videolan/x265.git && \
     cd x265/build/linux && \
