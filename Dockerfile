@@ -97,12 +97,12 @@ FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr-base
 RUN apt-get update && apt-get install -y wget jq && rm -rf /var/lib/apt/lists/*
 
 # Dolby Vision tools
-RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/dovi_tool/releases/latest | jq '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
+RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/dovi_tool/releases/latest | jq -r '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
     wget -O - $URL \
         | tar -zx -C /usr/local/bin/
 
 # HDR10+ tools
-RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/hdr10plus_tool/releases/latest| jq '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
+RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/hdr10plus_tool/releases/latest| jq -r '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
     wget -O - $URL \
         | tar -zx -C /usr/local/bin/
 
