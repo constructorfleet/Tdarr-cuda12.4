@@ -36,7 +36,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzstd-dev \
     ca-certificates \
     curl \
-    && apt-cache show libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp
@@ -67,7 +66,7 @@ WORKDIR /tmp/ffmpeg
 # Build FFmpeg with CUDA/NVENC/NVDEC and full Tdarr audio/subtitle support
 RUN ./configure \
     --prefix=/usr/local \
-    --pkg-config-flags="--static" \
+    # --pkg-config-flags="--static" \
     --extra-cflags="-I/usr/local/cuda/include" \
     --extra-ldflags="-L/usr/local/cuda/lib64" \
     --extra-libs="-lpthread -lm" \
