@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvorbis-dev \
     libopus-dev \
     libxml2-dev \
+    libdrm-dev \
     libzimg-dev \
     libxvidcore-dev \
     libshine-dev \
