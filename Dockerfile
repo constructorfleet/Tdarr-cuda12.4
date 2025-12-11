@@ -35,9 +35,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/lib/x86_64-linux-gnu/pkgconfig
-ENV PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig"
-
 WORKDIR /tmp
 
 # Build x265 manually because Ubuntu packages suck
