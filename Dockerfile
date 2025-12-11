@@ -31,6 +31,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxvidcore-dev \
     libshine-dev \
     zlib1g-dev \
+    liblzma-dev \
+    libicu-dev \
+    libzstd-dev \
     ca-certificates \
     curl \
     && apt-cache show libxml2-dev \
