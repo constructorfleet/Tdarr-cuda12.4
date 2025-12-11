@@ -38,8 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /tmp
 
-RUN echo "pkg-config search paths:" && pkg-config --variable pc_path pkg-config
-RUN echo "Searching for libxml2.pc" && find / -name "libxml-2.0.pc" 2>/dev/null || echo "NOT FOUND"
+RUN pkg-config --modversion libxml-2.0 || echo "pkg-config failed for libxml2"
 
 # Build x265 manually because Ubuntu packages suck
 RUN git clone https://github.com/videolan/x265.git && \
