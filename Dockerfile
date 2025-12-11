@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     ca-certificates \
     curl \
-    && apt-get info libxml2-dev \
+    && apt-cache show libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp
