@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtool \
     libssl-dev \
     libx264-dev \
-    libx265-dev \
     libvpx-dev \
     libfdk-aac-dev \
     libass-dev \
@@ -36,8 +35,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/pkgconfig
+ENV PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig"
+
 WORKDIR /tmp
 
+# Build x265 manually because Ubuntu packages suck
+RUN git clone https://github.com/videolan/x265.git && \
+    cd x265/build/linux && \
+    cmake -DENABLE_SHARED=ON ../../source && \
+    make -j"$(nproc)" && \
+    make install
 # Install NVENC/NVDEC headers
 RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
     cd nv-codec-headers && \
@@ -139,9 +147,9 @@ COPY --from=ffmpeg-build /usr/local/bin/ffmpeg /usr/local/bin/
 COPY --from=ffmpeg-build /usr/local/bin/ffprobe /usr/local/bin/
 COPY --from=ffmpeg-build /usr/local/lib/ /usr/local/lib/
 
-RUN chmod +x /usr/local/bin/dovi_tool /usr/local/bin/hdr10plus_tool
-
-RUN ln -s /usr/local/bin/ffmpeg /usr/local/bin/tdarr-ffmpeg
+RUN chmod +rx /usr/local/bin/dovi_tool /usr/local/bin/hdr10plus_tool /usr/lib/node_modules && \
+    ln -s /usr/local/bin/ffmpeg /usr/local/bin/tdarr-ffmpeg && \
+    ldconfig
 
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
