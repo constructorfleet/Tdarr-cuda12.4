@@ -143,6 +143,10 @@ COPY --from=tdarr-base /app /app
 COPY --from=tdarr-base /var /var
 COPY --from=tdarr-base /usr/bin /usr/bin
 COPY --from=tdarr-base /usr/lib/node_modules /usr/lib/node_modules
+# s6-overlay installs its real binaries under /package; /usr/bin/s6-* are symlinks into it
+COPY --from=tdarr-base /package /package
+# /command is also used by s6-overlay for its run scripts
+COPY --from=tdarr-base /command /command
 COPY --from=tdarr-base /usr/local/bin/dovi_tool /usr/local/bin/dovi_tool
 COPY --from=tdarr-base /usr/local/bin/hdr10plus_tool /usr/local/bin/hdr10plus_tool
 
