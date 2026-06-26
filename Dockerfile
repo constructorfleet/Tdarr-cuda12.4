@@ -51,7 +51,8 @@ RUN git clone https://github.com/videolan/x265.git && \
     make -j"$(nproc)" && \
     make install
 # Install NVENC/NVDEC headers
-RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
+ARG NVCODEC_HEADERS_VERSION=n12.2.72.0
+RUN git clone --branch "${NVCODEC_HEADERS_VERSION}" --depth 1 https://github.com/FFmpeg/nv-codec-headers.git && \
     cd nv-codec-headers && \
     make install
 
@@ -146,6 +147,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     mediainfo \
     libfribidi0 \
+    libboost-filesystem1.83.0 \
+    libtesseract5 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
