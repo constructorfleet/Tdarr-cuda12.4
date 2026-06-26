@@ -57,10 +57,10 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
 
 # Get FFmpeg source
 ARG FFMPEG_VERSION=7.0.3
-RUN curl -L https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz -o ffmpeg.tar.xz && \
-    tar xf ffmpeg.tar.xz && \
-    rm ffmpeg.tar.xz && \
-    mv ffmpeg-${FFMPEG_VERSION} ffmpeg
+RUN curl -L https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz && \
+    tar xf ffmpeg.tar.gz && \
+    rm ffmpeg.tar.gz && \
+    mv FFmpeg-n${FFMPEG_VERSION} ffmpeg
 
 WORKDIR /tmp/ffmpeg
 
@@ -106,16 +106,28 @@ RUN ./configure \
 ###############################
 FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr-base
 
-RUN apt-get update && apt-get install -y wget jq && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
+ARG TARGETARCH
+ARG DOVI_TOOL_VERSION=2.3.2
+ARG HDR10PLUS_TOOL_VERSION=1.7.2
 
 # Dolby Vision tools
-RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/dovi_tool/releases/latest | jq -r '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
-    wget -O - $URL \
+RUN case "${TARGETARCH:-amd64}" in \
+        amd64) TOOL_ARCH=x86_64 ;; \
+        arm64) TOOL_ARCH=aarch64 ;; \
+        *) echo "Unsupported TARGETARCH: ${TARGETARCH:-unknown}" >&2; exit 1 ;; \
+    esac && \
+    wget -O - "https://github.com/quietvoid/dovi_tool/releases/download/${DOVI_TOOL_VERSION}/dovi_tool-${DOVI_TOOL_VERSION}-${TOOL_ARCH}-unknown-linux-musl.tar.gz" \
         | tar -zx -C /usr/local/bin/
 
 # HDR10+ tools
-RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/hdr10plus_tool/releases/latest| jq -r '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
-    wget -O - $URL \
+RUN case "${TARGETARCH:-amd64}" in \
+        amd64) TOOL_ARCH=x86_64 ;; \
+        arm64) TOOL_ARCH=aarch64 ;; \
+        *) echo "Unsupported TARGETARCH: ${TARGETARCH:-unknown}" >&2; exit 1 ;; \
+    esac && \
+    wget -O - "https://github.com/quietvoid/hdr10plus_tool/releases/download/${HDR10PLUS_TOOL_VERSION}/hdr10plus_tool-${HDR10PLUS_TOOL_VERSION}-${TOOL_ARCH}-unknown-linux-musl.tar.gz" \
         | tar -zx -C /usr/local/bin/
 
 ###############################
@@ -130,11 +142,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     curl \
     wget \
+    jq \
     tini \
     mediainfo \
+    libfribidi0 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
+ENV TDARR_SKIP_FFMPEG_SETUP=true
 
 # Bring over s6 init, Tdarr node, tools, node runtime
 COPY --from=tdarr-base /init /init
@@ -154,9 +169,44 @@ COPY --from=tdarr-base /usr/local/bin/hdr10plus_tool /usr/local/bin/hdr10plus_to
 COPY --from=ffmpeg-build /usr/local/bin/ffmpeg /usr/local/bin/
 COPY --from=ffmpeg-build /usr/local/bin/ffprobe /usr/local/bin/
 COPY --from=ffmpeg-build /usr/local/lib/ /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libdrm.so.2* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libass.so.9* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libzimg.so.2* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfontconfig.so.1* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfreetype.so.6* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libharfbuzz.so.0* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libglib-2.0.so.0* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libgraphite2.so.3* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libpcre.so.3* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libxml2.so.2* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libvpx.so.7* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfdk-aac.so.2* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libexpat.so.1* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libpng16.so.16* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libicuuc.so.70* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libicudata.so.70* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libicui18n.so.70* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libogg.so.0* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libopus.so.0* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libshine.so.3* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libvorbis.so.0* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libvorbisenc.so.2* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libx264.so.163* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libxvidcore.so.4* /usr/local/lib/
 
-RUN chmod +rx /usr/local/bin/dovi_tool /usr/local/bin/hdr10plus_tool /usr/lib/node_modules && \
+RUN mv /etc/cont-init.d/03-setup-ffmpeg /usr/local/bin/tdarr-setup-ffmpeg.orig && \
+    printf '%s\n' \
+        '#!/usr/bin/with-contenv bash' \
+        'if [ "${TDARR_SKIP_FFMPEG_SETUP:-false}" = "true" ]; then' \
+        '    echo "Skipping Tdarr FFmpeg setup; keeping custom binaries"' \
+        '    exit 0' \
+        'fi' \
+        'exec /usr/local/bin/tdarr-setup-ffmpeg.orig "$@"' \
+        > /etc/cont-init.d/03-setup-ffmpeg && \
+    chmod +x /etc/cont-init.d/03-setup-ffmpeg /usr/local/bin/tdarr-setup-ffmpeg.orig && \
+    chmod +rx /usr/local/bin/dovi_tool /usr/local/bin/hdr10plus_tool /usr/lib/node_modules && \
     ln -s /usr/local/bin/ffmpeg /usr/local/bin/tdarr-ffmpeg && \
+    ln -s /usr/local/bin/ffprobe /usr/local/bin/tdarr-ffprobe && \
     ldconfig
 
 ENV NVIDIA_VISIBLE_DEVICES=all
