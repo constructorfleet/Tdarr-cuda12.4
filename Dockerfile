@@ -106,16 +106,28 @@ RUN ./configure \
 ###############################
 FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr-base
 
-RUN apt-get update && apt-get install -y wget jq && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
+ARG TARGETARCH
+ARG DOVI_TOOL_VERSION=2.3.2
+ARG HDR10PLUS_TOOL_VERSION=1.7.2
 
 # Dolby Vision tools
-RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/dovi_tool/releases/latest | jq -r '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
-    wget -O - $URL \
+RUN case "${TARGETARCH:-amd64}" in \
+        amd64) TOOL_ARCH=x86_64 ;; \
+        arm64) TOOL_ARCH=aarch64 ;; \
+        *) echo "Unsupported TARGETARCH: ${TARGETARCH:-unknown}" >&2; exit 1 ;; \
+    esac && \
+    wget -O - "https://github.com/quietvoid/dovi_tool/releases/download/${DOVI_TOOL_VERSION}/dovi_tool-${DOVI_TOOL_VERSION}-${TOOL_ARCH}-unknown-linux-musl.tar.gz" \
         | tar -zx -C /usr/local/bin/
 
 # HDR10+ tools
-RUN URL=$(wget -q -O - https://api.github.com/repos/quietvoid/hdr10plus_tool/releases/latest| jq -r '.assets[] | select(.browser_download_url | endswith("x86_64-unknown-linux-musl.tar.gz"))| .browser_download_url') && \
-    wget -O - $URL \
+RUN case "${TARGETARCH:-amd64}" in \
+        amd64) TOOL_ARCH=x86_64 ;; \
+        arm64) TOOL_ARCH=aarch64 ;; \
+        *) echo "Unsupported TARGETARCH: ${TARGETARCH:-unknown}" >&2; exit 1 ;; \
+    esac && \
+    wget -O - "https://github.com/quietvoid/hdr10plus_tool/releases/download/${HDR10PLUS_TOOL_VERSION}/hdr10plus_tool-${HDR10PLUS_TOOL_VERSION}-${TOOL_ARCH}-unknown-linux-musl.tar.gz" \
         | tar -zx -C /usr/local/bin/
 
 ###############################
