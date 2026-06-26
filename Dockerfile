@@ -57,10 +57,10 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
 
 # Get FFmpeg source
 ARG FFMPEG_VERSION=7.0.3
-RUN curl -L https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz -o ffmpeg.tar.xz && \
-    tar xf ffmpeg.tar.xz && \
-    rm ffmpeg.tar.xz && \
-    mv ffmpeg-${FFMPEG_VERSION} ffmpeg
+RUN curl -L https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz && \
+    tar xf ffmpeg.tar.gz && \
+    rm ffmpeg.tar.gz && \
+    mv FFmpeg-n${FFMPEG_VERSION} ffmpeg
 
 WORKDIR /tmp/ffmpeg
 
