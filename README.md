@@ -7,6 +7,7 @@ This repository builds a custom **Tdarr Node** image with:
 - Full NVENC/NVDEC acceleration
 - Hardened audio/subtitle codec support
 - Dolby Vision & HDR10+ tools
+- MKVToolNix (`mkvpropedit`) + HandBrake CLI
 - Correct s6-overlay integration (required for Tdarr)
 - Stable behavior under Docker Swarm GPU deployments
 

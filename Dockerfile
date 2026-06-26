@@ -145,11 +145,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     tini \
     mediainfo \
+    mkvtoolnix \
+    handbrake-cli \
     libfribidi0 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
 ENV TDARR_SKIP_FFMPEG_SETUP=true
+ENV mkvpropeditPath=/usr/bin/mkvpropedit
 
 # Bring over s6 init, Tdarr node, tools, node runtime
 COPY --from=tdarr-base /init /init
