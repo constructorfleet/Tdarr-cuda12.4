@@ -146,6 +146,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     mediainfo \
     libfribidi0 \
+    libboost-filesystem1.83.0 \
+    libtesseract5 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
