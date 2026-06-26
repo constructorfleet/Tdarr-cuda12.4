@@ -135,6 +135,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
+ENV TDARR_SKIP_FFMPEG_SETUP=true
 
 # Bring over s6 init, Tdarr node, tools, node runtime
 COPY --from=tdarr-base /init /init
@@ -155,8 +156,15 @@ COPY --from=ffmpeg-build /usr/local/bin/ffmpeg /usr/local/bin/
 COPY --from=ffmpeg-build /usr/local/bin/ffprobe /usr/local/bin/
 COPY --from=ffmpeg-build /usr/local/lib/ /usr/local/lib/
 
-RUN chmod +rx /usr/local/bin/dovi_tool /usr/local/bin/hdr10plus_tool /usr/lib/node_modules && \
+RUN sed -i '/echo "ffmpegVersion to use is \$ffmpegVersion"/a\
+if [ "${TDARR_SKIP_FFMPEG_SETUP:-false}" = "true" ]; then\
+    echo "Skipping Tdarr FFmpeg setup; keeping custom binaries"\
+    exit 0\
+fi\
+' /etc/cont-init.d/03-setup-ffmpeg && \
+    chmod +rx /usr/local/bin/dovi_tool /usr/local/bin/hdr10plus_tool /usr/lib/node_modules && \
     ln -s /usr/local/bin/ffmpeg /usr/local/bin/tdarr-ffmpeg && \
+    ln -s /usr/local/bin/ffprobe /usr/local/bin/tdarr-ffprobe && \
     ldconfig
 
 ENV NVIDIA_VISIBLE_DEVICES=all
