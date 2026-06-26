@@ -177,6 +177,7 @@ COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfreetype.so.6* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libharfbuzz.so.0* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libglib-2.0.so.0* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libgraphite2.so.3* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libpcre.so.3* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libxml2.so.2* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libvpx.so.7* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfdk-aac.so.2* /usr/local/lib/
