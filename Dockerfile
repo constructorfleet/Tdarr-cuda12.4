@@ -142,6 +142,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     curl \
     wget \
+    jq \
     tini \
     mediainfo \
     libfribidi0 \
@@ -173,9 +174,16 @@ COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libass.so.9* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libzimg.so.2* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfontconfig.so.1* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfreetype.so.6* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libharfbuzz.so.0* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libxml2.so.2* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libvpx.so.7* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libfdk-aac.so.2* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libexpat.so.1* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libpng16.so.16* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libicuuc.so.70* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libicudata.so.70* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libicui18n.so.70* /usr/local/lib/
+COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libogg.so.0* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libopus.so.0* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libshine.so.3* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libvorbis.so.0* /usr/local/lib/
@@ -183,16 +191,16 @@ COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libvorbisenc.so.2* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libx264.so.163* /usr/local/lib/
 COPY --from=ffmpeg-build /usr/lib/*-linux-gnu/libxvidcore.so.4* /usr/local/lib/
 
-RUN mv /etc/cont-init.d/03-setup-ffmpeg /etc/cont-init.d/03-setup-ffmpeg.orig && \
+RUN mv /etc/cont-init.d/03-setup-ffmpeg /usr/local/bin/tdarr-setup-ffmpeg.orig && \
     printf '%s\n' \
         '#!/usr/bin/with-contenv bash' \
         'if [ "${TDARR_SKIP_FFMPEG_SETUP:-false}" = "true" ]; then' \
         '    echo "Skipping Tdarr FFmpeg setup; keeping custom binaries"' \
         '    exit 0' \
         'fi' \
-        'exec /etc/cont-init.d/03-setup-ffmpeg.orig "$@"' \
+        'exec /usr/local/bin/tdarr-setup-ffmpeg.orig "$@"' \
         > /etc/cont-init.d/03-setup-ffmpeg && \
-    chmod +x /etc/cont-init.d/03-setup-ffmpeg /etc/cont-init.d/03-setup-ffmpeg.orig && \
+    chmod +x /etc/cont-init.d/03-setup-ffmpeg /usr/local/bin/tdarr-setup-ffmpeg.orig && \
     chmod +rx /usr/local/bin/dovi_tool /usr/local/bin/hdr10plus_tool /usr/lib/node_modules && \
     ln -s /usr/local/bin/ffmpeg /usr/local/bin/tdarr-ffmpeg && \
     ln -s /usr/local/bin/ffprobe /usr/local/bin/tdarr-ffprobe && \
