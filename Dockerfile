@@ -1,4 +1,4 @@
-ARG TDARR_TAG=latest
+ARG TDARR_TAG=2.80.01
 ###############################
 # Stage 1: Build FFmpeg with NVENC on CUDA 12.4 / Ubuntu 22.04
 ###############################
