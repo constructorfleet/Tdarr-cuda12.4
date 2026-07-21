@@ -38,15 +38,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /tmp
-RUN git clone --depth 1 https://github.com/videolan/x265.git && \
-    cmake -S x265/source -B x265/build/linux \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=/usr/local \
-      -DCMAKE_INSTALL_LIBDIR=lib \
-      -DENABLE_SHARED=ON && \
-    cmake --build x265/build/linux --parallel "$(nproc)" && \
-    cmake --install x265/build/linux && \
-    pkg-config --print-errors --modversion x265
+# Build x265 manually because Ubuntu packages suck
+RUN git clone https://github.com/videolan/x265.git && \
+    cd x265/build/linux && \
+    cmake -DENABLE_SHARED=ON ../../source && \
+    make -j"$(nproc)" && \
+    make install
 ARG NVCODEC_HEADERS_VERSION=n12.2.72.0
 RUN git clone --branch "${NVCODEC_HEADERS_VERSION}" --depth 1 \
       https://github.com/FFmpeg/nv-codec-headers.git && \
