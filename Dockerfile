@@ -3,7 +3,8 @@ ARG TDARR_TAG=latest
 # Stage 1: Build FFmpeg with NVENC on CUDA 12.4 / Ubuntu 22.04
 ###############################
 FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS ffmpeg-build
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
     automake \
@@ -38,9 +39,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /tmp
 RUN git clone --depth 1 https://github.com/videolan/x265.git && \
-    cmake -S x265/source -B x265/build/linux -DENABLE_SHARED=ON -DCMAKE_BUILD_TYPE=Release && \
+    cmake -S x265/source -B x265/build/linux \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DCMAKE_INSTALL_LIBDIR=lib \
+      -DENABLE_SHARED=ON && \
     cmake --build x265/build/linux --parallel "$(nproc)" && \
-    cmake --install x265/build/linux
+    cmake --install x265/build/linux && \
+    pkg-config --print-errors --modversion x265
 ARG NVCODEC_HEADERS_VERSION=n12.2.72.0
 RUN git clone --branch "${NVCODEC_HEADERS_VERSION}" --depth 1 \
       https://github.com/FFmpeg/nv-codec-headers.git && \
@@ -173,6 +179,8 @@ RUN ln -sfn /usr/local/cuda-12.4 /usr/local/cuda && \
     ffmpeg -hide_banner -encoders | grep -q hevc_nvenc && \
     HandBrakeCLI --version && \
     mkvpropedit --version && \
+    dovi_tool --version && \
+    hdr10plus_tool --version && \
     ! ldd "$(command -v HandBrakeCLI)" | grep -q 'not found' && \
     ! ldd "$(command -v mkvpropedit)" | grep -q 'not found'
 # Preserve the official image's /init entrypoint and service layout.
