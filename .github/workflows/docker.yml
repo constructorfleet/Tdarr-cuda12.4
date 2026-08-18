@@ -34,6 +34,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Extract TDARR_TAG from the Dockerfile ARG default
+      - name: Extract TDARR_TAG
+        id: tdarr
+        run: |
+          TDARR_TAG=$(grep -m1 '^ARG TDARR_TAG=' Dockerfile | cut -d= -f2)
+          echo "tag=${TDARR_TAG}" >> "$GITHUB_OUTPUT"
+
       # Auto-tagging + metadata generation
       - name: Extract Docker metadata
         id: meta
@@ -45,6 +52,7 @@ jobs:
             type=ref,event=tag
             type=sha
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ steps.tdarr.outputs.tag }}
 
       # Cache FFmpeg build layers
       - name: Docker build cache
