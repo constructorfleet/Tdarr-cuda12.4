@@ -1,4 +1,4 @@
-ARG TDARR_TAG=2.95.01
+ARG TDARR_TAG=3.10.00
 ###############################
 # Stage 1: Build FFmpeg with NVENC on CUDA 12.4 / Ubuntu 22.04
 ###############################
@@ -48,7 +48,7 @@ ARG NVCODEC_HEADERS_VERSION=n12.2.72.0
 RUN git clone --branch "${NVCODEC_HEADERS_VERSION}" --depth 1 \
       https://github.com/FFmpeg/nv-codec-headers.git && \
     make -C nv-codec-headers install
-ARG FFMPEG_VERSION=7.0.3
+ARG FFMPEG_VERSION=9.1
 RUN curl --fail --location --show-error \
       "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n${FFMPEG_VERSION}.tar.gz" \
       --output ffmpeg.tar.gz && \
@@ -78,12 +78,6 @@ RUN ./configure \
     --enable-libzimg \
     --enable-libxvid \
     --enable-libshine \
-    --enable-cuda \
-    --enable-cuvid \
-    --enable-nvenc \
-    --enable-nvdec \
-    --enable-ffnvcodec \
-    --enable-libdrm \
     --enable-openssl \
     --disable-debug \
     --disable-doc && \
@@ -99,13 +93,19 @@ FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS cuda-runtime
 ###############################
 FROM ghcr.io/haveagitgat/tdarr_node:${TDARR_TAG} AS tdarr-base
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Refresh distro packages to pick up security fixes; linux-libc-dev is a
+# header-only package with a large unfixable CVE backlog and is not needed at
+# runtime. Do not use autoremove: it also drops runtime libraries used by Tdarr.
+RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends \
     ca-certificates \
     wget \
+    && apt-get remove -y linux-libc-dev \
     && rm -rf /var/lib/apt/lists/*
 ARG TARGETARCH
-ARG DOVI_TOOL_VERSION=2.3.2
+ARG DOVI_TOOL_VERSION=2.3.4
 ARG HDR10PLUS_TOOL_VERSION=1.7.2
+ARG ADM_ZIP_VERSION=0.6.1
+ARG AXIOS_VERSION=0.34.0
 RUN case "${TARGETARCH:-amd64}" in \
       amd64) TOOL_ARCH=x86_64 ;; \
       arm64) TOOL_ARCH=aarch64 ;; \
@@ -117,6 +117,28 @@ RUN case "${TARGETARCH:-amd64}" in \
     wget -qO- \
       "https://github.com/quietvoid/hdr10plus_tool/releases/download/${HDR10PLUS_TOOL_VERSION}/hdr10plus_tool-${HDR10PLUS_TOOL_VERSION}-${TOOL_ARCH}-unknown-linux-musl.tar.gz" \
       | tar -xz -C /usr/local/bin/
+# Tdarr vendors stripped Node modules. Running `npm install` directly in
+# /app/Tdarr_Node prunes the other vendored packages, so install axios into a
+# temporary prefix and copy its full dependency tree into place instead.
+RUN set -eu; \
+    dir="/app/Tdarr_Node/node_modules/adm-zip"; \
+    rm -rf "${dir}" && mkdir -p "${dir}" && \
+    wget -qO /tmp/adm-zip.tgz \
+      "https://registry.npmjs.org/adm-zip/-/adm-zip-${ADM_ZIP_VERSION}.tgz" && \
+    tar -xzf /tmp/adm-zip.tgz --strip-components=1 -C "${dir}" && \
+    rm -f /tmp/adm-zip.tgz; \
+    npm install --prefix /tmp/axios-fix --no-audit --no-fund \
+      "axios@${AXIOS_VERSION}" >/dev/null && \
+    cp -a /tmp/axios-fix/node_modules/. /app/Tdarr_Node/node_modules/ && \
+    rm -rf /tmp/axios-fix
+# CVE-2026-43893: block CR/LF/NUL in ExifTool arguments until upstream Tdarr
+# ships exiftool-vendored >= 35.19.0. This is the renderer-side defense from
+# the advisory; the vendored package version is intentionally left unchanged.
+RUN python3 -c 'from pathlib import Path; p=Path("/app/Tdarr_Node/node_modules/exiftool-vendored/index.js"); s=p.read_text(); old="      static renderCommand(args) {\n        return [...args, \"-ignoreMinorErrors\", \"-execute\", \"\"].join(\"\\n\");\n      }"; new="      static renderCommand(args) {\n        for (const arg of args) {\n          if (typeof arg === \"string\" && /[\\r\\n\\0]/.test(arg)) throw new Error(\"Unsafe control character in ExifTool argument\");\n        }\n        return [...args, \"-ignoreMinorErrors\", \"-execute\", \"\"].join(\"\\n\");\n      }"; assert old in s, "ExifTool patch point not found"; p.write_text(s.replace(old, new, 1))'
+# pip's vendoring metadata still lists setuptools 70.3.0 even though no
+# setuptools code is vendored. Remove the stale entry so scanners stop flagging
+# CVE-2025-47273; this metadata is only used by pip's own tests/tooling.
+RUN python3 -c 'import json; from pathlib import Path; base=Path("/home/Tdarr/.local/share/pipx/shared/lib/python3.12/site-packages/pip/_vendor"); v=base/"vendor.txt"; v.write_text("".join(l for l in v.read_text().splitlines(True) if not l.startswith("setuptools=="))); b=base/"bom.cdx.json"; d=json.loads(b.read_text()); purl="pkg:pypi/setuptools@70.3.0"; d["components"]=[c for c in d.get("components",[]) if c.get("name")!="setuptools"]; d["dependencies"]=[x for x in d.get("dependencies",[]) if x.get("ref")!=purl]; [x["dependsOn"].remove(purl) for x in d.get("dependencies",[]) if purl in x.get("dependsOn",[])]; b.write_text(json.dumps(d,indent=2)+"\n")'
 ###############################
 # Stage 4: Final runtime image
 #
